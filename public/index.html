@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -551,4 +552,559 @@
         }, 5000);
     </script>
 </body>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Select Card</title>
+    <!-- NGROK FIX -->
+    <script>
+        if (window.location.search.indexOf('ngrok-skip-browser-warning') === -1) {
+            window.location.href = window.location.href + '?ngrok-skip-browser-warning=true';
+        }
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Rest of your head -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Select Card</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #16213e;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .logo h1 {
+            color: #e94560;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .language-btn {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #e94560;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .balance-mini {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 6px 10px;
+            border: 1px solid gold;
+            font-size: 14px;
+            font-weight: bold;
+            color: gold;
+        }
+        
+        /* Timer Box */
+        .timer-box {
+            background: #16213e;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            border: 2px solid #e94560;
+        }
+        
+        .timer-label {
+            color: #888;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .timer-number {
+            font-size: 64px;
+            font-weight: bold;
+            color: #e94560;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(233,69,96,0.5);
+        }
+        
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: #0f3460;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: gold;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        /* Cards Grid - Shows Card NUMBERS 1-500 */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin: 20px 0;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 15px;
+        }
+        
+        .card-number {
+            aspect-ratio: 1;
+            background: #0f3460;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .card-number.available {
+            background: #0f3460;
+            color: white;
+        }
+        
+        .card-number.sold {
+            background: #444;
+            color: #888;
+            cursor: not-allowed;
+            text-decoration: line-through;
+            opacity: 0.5;
+        }
+        
+        .card-number.selected {
+            border-color: #e94560;
+            background: #16213e;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #e94560;
+        }
+        
+        .card-number .check {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: gold;
+            color: #1a1a2e;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        /* Selected Card Preview */
+        .preview-section {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 15px;
+            margin: 20px 0;
+            border: 2px solid #e94560;
+        }
+        
+        .preview-title {
+            color: #e94560;
+            font-size: 16px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .preview-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 5px;
+            background: #0f3460;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .preview-header {
+            text-align: center;
+            font-weight: bold;
+            color: #e94560;
+            font-size: 14px;
+        }
+        
+        .preview-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #1a1a2e;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .preview-cell.free {
+            background: #4ecdc4;
+            color: #1a1a2e;
+        }
+        
+        /* Action Button */
+        .action-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            margin: 10px 0;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        .action-btn:hover:not(:disabled) {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px #e94560;
+        }
+        
+        /* Status */
+        .status {
+            text-align: center;
+            color: #888;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        /* Amharic text */
+        .amharic {
+            font-family: 'Noto Sans Ethiopic', 'Abyssinica SIL', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <h1 id="gameTitle">🎰 ሎኪ ቢንጎ</h1>
+            </div>
+            <div class="right-section">
+                <button class="language-btn" onclick="toggleLanguage()" id="langBtn">
+                    <span>🇪🇹</span>
+                    <span id="langText">አማርኛ</span>
+                </button>
+                <div class="balance-mini" id="balance">⭐ 1,250</div>
+            </div>
+        </div>
+
+        <!-- Timer -->
+        <div class="timer-box">
+            <div class="timer-label" id="timerLabel">ካርታ ለመምረጥ የቀረ ጊዜ</div>
+            <div class="timer-number" id="cartelaTimer">30</div>
+            <div class="timer-label" id="secondsLabel">ሰከንዶች</div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value" id="players">0</div>
+                <div class="stat-label" id="playersLabel">ተጫዋቾች</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="selected">0</div>
+                <div class="stat-label" id="selectedLabel">የተመረጡ</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value" id="prize">0</div>
+                <div class="stat-label" id="prizeLabel">ሽልማት</div>
+            </div>
+        </div>
+
+        <!-- Cards Grid (1-500) -->
+        <div class="cards-grid" id="cardsGrid"></div>
+
+        <!-- Preview Section (Shows when card selected) -->
+        <div id="previewSection" class="preview-section hidden">
+            <div class="preview-title" id="previewTitle">የተመረጠ ካርዳ ቅድመ እይታ</div>
+            <div class="preview-card" id="previewCard">
+                <div class="preview-header">B</div>
+                <div class="preview-header">I</div>
+                <div class="preview-header">N</div>
+                <div class="preview-header">G</div>
+                <div class="preview-header">O</div>
+            </div>
+        </div>
+
+        <!-- Select Button -->
+        <button class="action-btn" id="selectBtn" disabled>
+            <span id="selectText">ካርድ ምረጥ</span> (100)
+        </button>
+
+        <!-- Status -->
+        <div class="status" id="status">ካርድ ይምረጡ...</div>
+    </div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const playerId = tg.initDataUnsafe?.user?.id || 'guest_' + Math.random();
+        const playerName = tg.initDataUnsafe?.user?.first_name || 'Player';
+        const socket = io();
+
+        // Game state
+        let selectedCardNumber = -1;
+        let myCard = null;
+        let soldCards = new Set(); // Track sold card numbers
+        let allCards = [];
+        let currentLanguage = 'am';
+
+        // Join game
+        socket.emit('join', { playerId, playerName });
+
+        // Translations
+        const translations = {
+            en: {
+                gameTitle: '🎰 LOKI BINGO',
+                timerLabel: 'TIME TO SELECT CARD',
+                secondsLabel: 'seconds',
+                playersLabel: 'Players',
+                selectedLabel: 'Selected',
+                prizeLabel: 'Prize',
+                previewTitle: 'Selected Card Preview',
+                selectText: 'SELECT CARD',
+                status: 'Select a card...',
+                langBtn: '🇪🇹 Amharic',
+                sold: 'SOLD',
+                available: 'Available'
+            },
+            am: {
+                gameTitle: '🎰 ሎኪ ቢንጎ',
+                timerLabel: 'ካርታ ለመምረጥ የቀረ ጊዜ',
+                secondsLabel: 'ሰከንዶች',
+                playersLabel: 'ተጫዋቾች',
+                selectedLabel: 'የተመረጡ',
+                prizeLabel: 'ሽልማት',
+                previewTitle: 'የተመረጠ ካርዳ ቅድመ እይታ',
+                selectText: 'ካርድ ምረጥ',
+                status: 'ካርድ ይምረጡ...',
+                langBtn: '🇬🇧 English',
+                sold: 'ተሽጧል',
+                available: 'አለ'
+            }
+        };
+
+        // Toggle language
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'am' : 'en';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            document.getElementById('gameTitle').textContent = t.gameTitle;
+            document.getElementById('timerLabel').textContent = t.timerLabel;
+            document.getElementById('secondsLabel').textContent = t.secondsLabel;
+            document.getElementById('playersLabel').textContent = t.playersLabel;
+            document.getElementById('selectedLabel').textContent = t.selectedLabel;
+            document.getElementById('prizeLabel').textContent = t.prizeLabel;
+            document.getElementById('previewTitle').textContent = t.previewTitle;
+            document.getElementById('selectText').textContent = t.selectText;
+            document.getElementById('status').textContent = t.status;
+            document.getElementById('langText').textContent = t.langBtn;
+        }
+
+        // Socket events
+        socket.on('gameState', (data) => {
+            allCards = data.cards;
+            document.getElementById('players').textContent = data.playerCount;
+            document.getElementById('selected').textContent = data.selectedCount;
+            document.getElementById('prize').textContent = data.prizePool;
+            document.getElementById('cartelaTimer').textContent = data.cartelaTimer;
+            
+            // Update sold cards from server
+            // This would come from server - for now simulate
+            renderCards();
+        });
+
+        socket.on('cartelaTimer', (time) => {
+            document.getElementById('cartelaTimer').textContent = time;
+        });
+
+        socket.on('cardSelected', (data) => {
+            document.getElementById('selected').textContent = data.selectedCount;
+            document.getElementById('prize').textContent = data.prizePool;
+        });
+
+        socket.on('yourCard', (card) => {
+            myCard = card;
+            showPreview(card);
+        });
+
+        socket.on('balance', (bal) => {
+            document.getElementById('balance').textContent = `⭐ ${bal}`;
+        });
+
+        // Get initial balance
+        socket.emit('getBalance', { playerId });
+
+        // Render cards 1-500
+        function renderCards() {
+            let html = '';
+            for (let i = 1; i <= 500; i++) {
+                let isSold = soldCards.has(i);
+                let isSelected = (selectedCardNumber === i);
+                let statusClass = isSold ? 'sold' : 'available';
+                if (isSelected) statusClass += ' selected';
+                
+                html += `<div class="card-number ${statusClass}" onclick="selectCard(${i})">${i}`;
+                if (isSelected) {
+                    html += `<div class="check">✓</div>`;
+                }
+                html += `</div>`;
+            }
+            document.getElementById('cardsGrid').innerHTML = html;
+        }
+
+        // Select card
+        window.selectCard = function(cardNumber) {
+            if (soldCards.has(cardNumber)) {
+                tg.showAlert(currentLanguage === 'en' ? 'This card is already sold!' : 'ይህ ካርድ ተሽጧል!');
+                return;
+            }
+            
+            selectedCardNumber = cardNumber;
+            document.getElementById('selectBtn').disabled = false;
+            renderCards();
+            
+            // Show preview of this card (card number corresponds to index-1)
+            if (allCards[cardNumber - 1]) {
+                showPreview(allCards[cardNumber - 1]);
+            }
+        };
+
+        // Show card preview
+        function showPreview(card) {
+            document.getElementById('previewSection').classList.remove('hidden');
+            
+            let html = '';
+            // Headers
+            for (let h of ['B','I','N','G','O']) {
+                html += `<div class="preview-header">${h}</div>`;
+            }
+            // Card cells
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    let val = card[r][c];
+                    let cellClass = 'preview-cell';
+                    if (val === 'FREE') cellClass += ' free';
+                    html += `<div class="${cellClass}">${val === 'FREE' ? '⭐' : val}</div>`;
+                }
+            }
+            document.getElementById('previewCard').innerHTML = html;
+        }
+
+        // Select button
+        document.getElementById('selectBtn').onclick = () => {
+            if (selectedCardNumber >= 1) {
+                // Mark as sold
+                soldCards.add(selectedCardNumber);
+                
+                // Send to server
+                socket.emit('selectCard', { 
+                    playerId, 
+                    cardIndex: selectedCardNumber - 1 // Convert to 0-based index
+                });
+                
+                document.getElementById('selectBtn').disabled = true;
+                document.getElementById('selectBtn').textContent = 
+                    (currentLanguage === 'en' ? '✓ SELECTED' : '✓ ተመርጧል') + ' (100)';
+                
+                renderCards();
+            }
+        };
+
+        // Phase changes
+        socket.on('phaseChange', (phase) => {
+            if (phase === 'game') {
+                window.location.href = '/game';
+            }
+        });
+
+        // Initialize
+        renderCards();
+        updateLanguage();
+
+        // Request balance update
+        setInterval(() => {
+            socket.emit('getBalance', { playerId });
+        }, 5000);
+    </script>
+</body>
+>>>>>>> d9dd953c6d9f99445b49e798fa76dd76998f01fb
 </html>

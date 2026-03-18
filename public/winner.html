@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
 <head>
@@ -147,4 +148,155 @@
         }
     </script>
 </body>
+=======
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Winner</title>
+    <!-- NGROK FIX -->
+    <script>
+        if (window.location.search.indexOf('ngrok-skip-browser-warning') === -1) {
+            window.location.href = window.location.href + '?ngrok-skip-browser-warning=true';
+        }
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Rest of your head -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Winner</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #e94560;
+            font-size: 40px;
+            margin-bottom: 30px;
+        }
+        
+        .winner-card {
+            background: linear-gradient(135deg, gold, #ffd700);
+            color: #1a1a2e;
+            padding: 40px;
+            border-radius: 30px;
+            margin: 30px 0;
+            animation: bounce 1s infinite;
+            border: 3px solid white;
+        }
+        
+        @keyframes bounce {
+            0%,100%{transform:translateY(0)}
+            50%{transform:translateY(-10px)}
+        }
+        
+        .winner-name {
+            font-size: 36px;
+            font-weight: bold;
+            margin: 15px 0;
+        }
+        
+        .winner-prize {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .timer-box {
+            background: #16213e;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 2px solid #e94560;
+        }
+        
+        .timer-number {
+            font-size: 64px;
+            font-weight: bold;
+            color: #e94560;
+        }
+        
+        .new-round-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎰 LOKI BINGO</h1>
+        
+        <div class="winner-card">
+            <div style="font-size:64px;">🏆</div>
+            <div class="winner-name" id="winnerName">Player</div>
+            <div class="winner-prize" id="winnerPrize">💰 0</div>
+        </div>
+        
+        <div class="timer-box">
+            <div style="color:#888;">Next Round In</div>
+            <div class="timer-number" id="timer">5</div>
+            <div style="color:#888;">seconds</div>
+        </div>
+        
+        <button class="new-round-btn" onclick="newRound()">New Round</button>
+    </div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const socket = io();
+        
+        socket.on('gameWon', (data) => {
+            document.getElementById('winnerName').textContent = data.name;
+            document.getElementById('winnerPrize').textContent = `💰 ${data.prize}`;
+        });
+        
+        socket.on('winnerTimer', (time) => {
+            document.getElementById('timer').textContent = time;
+        });
+        
+        socket.on('phaseChange', (phase) => {
+            if (phase === 'cartela') {
+                window.location.href = '/';
+            }
+        });
+        
+        function newRound() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+>>>>>>> d9dd953c6d9f99445b49e798fa76dd76998f01fb
 </html>

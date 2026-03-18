@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 {
   "build": {
     "builder": "NIXPACKS"
@@ -8,4 +9,16 @@
     "healthcheckTimeout": 100,
     "restartPolicyType": "ON_FAILURE"
   }
+=======
+{
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "npm start",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE"
+  }
+>>>>>>> d9dd953c6d9f99445b49e798fa76dd76998f01fb
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -448,4 +449,456 @@
         updateLanguage();
     </script>
 </body>
+=======
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script>
+        if (!window.location.search.includes('ngrok-skip-browser-warning')) {
+            window.location.href = window.location.href + '?ngrok-skip-browser-warning=true';
+        }
+    </script>
+    <!-- rest of your head -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Games - Lobby</title>
+    <!-- NGROK FIX - DO NOT REMOVE -->
+    <script>
+        (function() {
+            if (!window.location.search.includes('ngrok-skip-browser-warning')) {
+                window.location.href = window.location.href + '?ngrok-skip-browser-warning=true';
+            }
+        })();
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 16px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            background: #16213e;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        
+        .logo h1 {
+            color: #e94560;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        
+        .logo span {
+            color: #888;
+            font-size: 12px;
+        }
+        
+        .right-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .language-btn {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #e94560;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .balance-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .balance-card {
+            background: #0f3460;
+            border-radius: 10px;
+            padding: 8px 12px;
+            text-align: center;
+            border: 1px solid gold;
+        }
+        
+        .balance-label {
+            color: #888;
+            font-size: 10px;
+        }
+        
+        .balance-value {
+            color: gold;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .action-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .action-btn.outline {
+            background: transparent;
+            border: 1px solid #e94560;
+        }
+        
+        /* Featured Game - BINGO */
+        .featured-game {
+            background: linear-gradient(135deg, #16213e 0%, #e94560 100%);
+            border-radius: 20px;
+            padding: 30px 20px;
+            margin-bottom: 30px;
+            text-align: center;
+            cursor: pointer;
+            border: 2px solid gold;
+            box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
+        }
+        
+        .featured-game .game-icon {
+            font-size: 60px;
+            margin-bottom: 10px;
+        }
+        
+        .featured-game .game-name {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .featured-game .game-price {
+            font-size: 24px;
+            color: gold;
+            font-weight: bold;
+        }
+        
+        /* Section Titles */
+        .section-title {
+            color: #e94560;
+            font-size: 20px;
+            margin: 25px 0 15px;
+            font-weight: bold;
+        }
+        
+        /* Games Grid */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .game-card {
+            background: #16213e;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid #0f3460;
+            transition: all 0.2s;
+        }
+        
+        .game-card:hover {
+            border-color: #e94560;
+            transform: scale(1.02);
+        }
+        
+        .game-icon {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .game-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            font-size: 18px;
+        }
+        
+        .game-price {
+            color: gold;
+            font-size: 16px;
+        }
+        
+        .new-badge {
+            background: #e94560;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        /* Bottom Games */
+        .bottom-games {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .bottom-game {
+            background: #0f3460;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .support-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .support-btn {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #e94560;
+            padding: 15px 30px;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+        
+        .support-btn:hover {
+            background: #e94560;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        /* Amharic text */
+        .amharic {
+            font-family: 'Noto Sans Ethiopic', 'Abyssinica SIL', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Balance and Language -->
+        <div class="header">
+            <div class="logo">
+                <h1 id="gameTitle">🎰 LOKI GAMES</h1>
+                <span id="gameSubtitle">በሎኪ ጨዋታዎች</span>
+            </div>
+            <div class="right-section">
+                <button class="language-btn" onclick="toggleLanguage()" id="langBtn">
+                    <span>🇪🇹</span>
+                    <span id="langText">አማርኛ</span>
+                </button>
+                <div class="balance-section">
+                    <div class="balance-card">
+                        <div class="balance-label" id="balanceLabel">ቀሪ ሂሳብ</div>
+                        <div class="balance-value" id="balance">⭐ 1,250</div>
+                    </div>
+                    <button class="action-btn outline" onclick="cashOut()" id="cashOutBtn">ገንዘብ አውጣ</button>
+                    <button class="action-btn" onclick="deposit()" id="depositBtn">ገንዘብ ጨምር</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Featured Game - BINGO (Eye catching) -->
+        <div class="featured-game" onclick="playBingo()">
+            <div class="game-icon">🎰</div>
+            <div class="game-name" id="bingoTitle">BINGO</div>
+            <div class="game-price" id="bingoPrice">⭐ 14 ብቻ</div>
+        </div>
+
+        <!-- Other Games Section -->
+        <div class="section-title" id="otherGamesTitle">ሌሎች ጨዋታዎች</div>
+        <div class="games-grid">
+            <div class="game-card" onclick="playGame('ludo')">
+                <div class="game-icon">🎲</div>
+                <div class="game-name" id="ludoName">ሉዶ</div>
+                <div class="game-price">⭐ 19</div>
+            </div>
+            <div class="game-card" onclick="playGame('crazy')">
+                <div class="game-icon">🎯</div>
+                <div class="game-name" id="crazyName">ክሬዚ</div>
+                <div class="game-price">⭐ 15</div>
+            </div>
+        </div>
+
+        <!-- New Games -->
+        <div class="section-title">
+            <span id="newTitle">አዲስ</span>
+            <span class="new-badge">NEW</span>
+        </div>
+        <div class="bottom-games">
+            <div class="bottom-game" onclick="playGame('xo')">
+                <div class="game-name" id="xoName">XO</div>
+            </div>
+            <div class="bottom-game" onclick="playGame('conquer')">
+                <div class="game-name" id="conquerName">ኮንከር</div>
+            </div>
+        </div>
+
+        <!-- Support Button -->
+        <div class="support-section">
+            <button class="support-btn" onclick="contactSupport()">
+                <span>📞</span>
+                <span id="supportText">ድጋፍ ያግኙ</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const playerId = tg.initDataUnsafe?.user?.id || 'guest_' + Math.random();
+        const playerName = tg.initDataUnsafe?.user?.first_name || 'Player';
+        const socket = io();
+
+        let balance = 1250;
+        let currentLanguage = 'am';
+
+        socket.emit('getBalance', { playerId });
+        
+        socket.on('balance', (bal) => {
+            balance = bal;
+            updateBalanceDisplay();
+        });
+
+        const translations = {
+            en: {
+                gameTitle: '🎰 LOKI GAMES',
+                gameSubtitle: 'Loki Games',
+                balanceLabel: 'Balance',
+                cashOutBtn: 'Cash Out',
+                depositBtn: 'Deposit',
+                bingoTitle: 'BINGO',
+                bingoPrice: '⭐ 14 Only',
+                otherGamesTitle: 'Other Games',
+                ludoName: 'Ludo',
+                crazyName: 'Crazy',
+                newTitle: 'NEW',
+                xoName: 'XO',
+                conquerName: 'Conquer',
+                supportText: 'Contact Support',
+                langBtn: '🇪🇹 Amharic'
+            },
+            am: {
+                gameTitle: '🎰 ሎኪ ጨዋታዎች',
+                gameSubtitle: 'በሎኪ ጨዋታዎች',
+                balanceLabel: 'ቀሪ ሂሳብ',
+                cashOutBtn: 'ገንዘብ አውጣ',
+                depositBtn: 'ገንዘብ ጨምር',
+                bingoTitle: 'ቢንጎ',
+                bingoPrice: '⭐ 14 ብቻ',
+                otherGamesTitle: 'ሌሎች ጨዋታዎች',
+                ludoName: 'ሉዶ',
+                crazyName: 'ክሬዚ',
+                newTitle: 'አዲስ',
+                xoName: 'XO',
+                conquerName: 'ኮንከር',
+                supportText: 'ድጋፍ ያግኙ',
+                langBtn: '🇬🇧 English'
+            }
+        };
+
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'am' : 'en';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            document.getElementById('gameTitle').textContent = t.gameTitle;
+            document.getElementById('gameSubtitle').textContent = t.gameSubtitle;
+            document.getElementById('balanceLabel').textContent = t.balanceLabel;
+            document.getElementById('cashOutBtn').textContent = t.cashOutBtn;
+            document.getElementById('depositBtn').textContent = t.depositBtn;
+            document.getElementById('bingoTitle').textContent = t.bingoTitle;
+            document.getElementById('bingoPrice').textContent = t.bingoPrice;
+            document.getElementById('otherGamesTitle').textContent = t.otherGamesTitle;
+            document.getElementById('ludoName').textContent = t.ludoName;
+            document.getElementById('crazyName').textContent = t.crazyName;
+            document.getElementById('newTitle').textContent = t.newTitle;
+            document.getElementById('xoName').textContent = t.xoName;
+            document.getElementById('conquerName').textContent = t.conquerName;
+            document.getElementById('supportText').textContent = t.supportText;
+            document.getElementById('langText').textContent = t.langBtn;
+        }
+
+        function updateBalanceDisplay() {
+            document.getElementById('balance').textContent = `⭐ ${balance}`;
+        }
+
+        function playBingo() {
+            if (balance >= 14) {
+                socket.emit('deductBalance', { playerId, amount: 14 });
+                window.location.href = '/';
+            } else {
+                tg.showAlert(currentLanguage === 'en' ? 'Insufficient balance! Please deposit.' : 'በቂ ገንዘብ የለም! እባክዎ ገንዘብ ይጨምሩ።');
+            }
+        }
+
+        function playGame(game) {
+            tg.showAlert(currentLanguage === 'en' ? `🎮 ${game} game coming soon!` : `🎮 ${game} ጨዋታ በቅርቡ ይመጣል!`);
+        }
+
+        function deposit() {
+            tg.showAlert(currentLanguage === 'en' ? '💰 Deposit feature coming soon!' : '💰 ገንዘብ መጨመሪያ በቅርቡ ይመጣል!');
+        }
+
+        function cashOut() {
+            tg.showAlert(currentLanguage === 'en' ? '💸 Cash out feature coming soon!' : '💸 ገንዘብ ማውጫ በቅርቡ ይመጣል!');
+        }
+
+        function contactSupport() {
+            const phone = '+251922427297';
+            tg.showAlert(currentLanguage === 'en' ? 
+                `📞 Support: ${phone}\n\nYou can call or send a message.` : 
+                `📞 ድጋፍ: ${phone}\n\nመደወል ወይም መልዕክት መላክ ይችላሉ።`);
+            tg.openTelegramLink(`https://t.me/+251922427297`);
+        }
+
+        updateLanguage();
+    </script>
+</body>
+>>>>>>> d9dd953c6d9f99445b49e798fa76dd76998f01fb
 </html>

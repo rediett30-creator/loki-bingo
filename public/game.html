@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Game</title>
+    <!-- NGROK FIX -->
+    <script>
+        if (window.location.search.indexOf('ngrok-skip-browser-warning') === -1) {
+            window.location.href = window.location.href + '?ngrok-skip-browser-warning=true';
+        }
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <!-- Rest of your head -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loki Bingo - Game</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        body {
+            background: #1a1a2e;
+            color: white;
+            min-height: 100vh;
+            padding: 12px;
+        }
+        
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            background: #16213e;
+            padding: 12px 15px;
+            border-radius: 12px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            color: #e94560;
+            font-size: 22px;
+        }
+        
+        .language-btn {
+            background: #0f3460;
+            color: white;
+            border: 1px solid #e94560;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .prize-box {
+            background: gold;
+            color: #1a1a2e;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        /* Current Number BIG Display */
+        .current-number-box {
+            background: #16213e;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px 0;
+            border: 3px solid #e94560;
+        }
+        
+        .current-number-label {
+            color: #888;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .current-number-big {
+            font-size: 72px;
+            font-weight: bold;
+            color: #e94560;
+            line-height: 1;
+        }
+        
+        .current-letter {
+            font-size: 24px;
+            color: gold;
+            margin-top: 5px;
+        }
+        
+        /* Main Game Area - Two Columns Side by Side */
+        .game-area {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        /* Left Side - BINGO Columns (Called Numbers) */
+        .called-section {
+            flex: 1;
+            background: #0f3460;
+            border-radius: 15px;
+            padding: 10px;
+        }
+        
+        .section-title {
+            color: #e94560;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        /* BINGO Columns Layout */
+        .bingo-columns {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .column {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .column-header {
+            background: #e94560;
+            color: white;
+            padding: 5px 0;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px 5px 0 0;
+            margin-bottom: 5px;
+        }
+        
+        .column-numbers {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #16213e;
+            border-radius: 0 0 5px 5px;
+            padding: 3px;
+        }
+        
+        .number-item {
+            padding: 2px 0;
+            font-size: 11px;
+            font-weight: bold;
+            border-radius: 3px;
+            margin: 1px 0;
+            transition: all 0.2s;
+        }
+        
+        .number-item.called {
+            background: #e94560;
+            color: white;
+        }
+        
+        .number-item.called::after {
+            content: " ✓";
+            color: gold;
+            font-size: 9px;
+        }
+        
+        /* Right Side - Bingo Card (5x5) */
+        .card-section {
+            flex: 1;
+            background: #16213e;
+            border-radius: 15px;
+            padding: 10px;
+            border: 2px solid #e94560;
+        }
+        
+        .card-title {
+            text-align: center;
+            color: #e94560;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 3px;
+        }
+        
+        .header-cell {
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: #e94560;
+            padding: 2px;
+        }
+        
+        .card-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f3460;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.2s;
+        }
+        
+        .card-cell:hover {
+            transform: scale(1.05);
+            border-color: gold;
+        }
+        
+        .card-cell.marked {
+            background: #e94560;
+            transform: scale(0.95);
+        }
+        
+        .card-cell.free {
+            background: #4ecdc4;
+            color: #1a1a2e;
+        }
+        
+        .cell-letter {
+            font-size: 8px;
+            color: rgba(255,255,255,0.7);
+        }
+        
+        /* Bingo Button */
+        .bingo-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            margin: 10px 0;
+            border: 2px solid white;
+            transition: all 0.2s;
+        }
+        
+        .bingo-btn:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px #e94560;
+        }
+        
+        .bingo-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
+        
+        /* Status */
+        .status {
+            text-align: center;
+            color: #888;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        
+        /* Winning Patterns */
+        .patterns-box {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 8px;
+            margin: 10px 0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            justify-content: center;
+        }
+        
+        .pattern-badge {
+            background: #0f3460;
+            color: gold;
+            padding: 3px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            border: 1px solid #e94560;
+        }
+        
+        .hidden {
+            display: none;
+        }
+
+        /* Amharic text */
+        .amharic {
+            font-family: 'Noto Sans Ethiopic', 'Abyssinica SIL', sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Language Switch -->
+        <div class="header">
+            <div class="logo">
+                <h1 id="gameTitle">🎰 LOKI BINGO</h1>
+                <button class="language-btn" onclick="toggleLanguage()" id="langBtn">
+                    <span>🇪🇹</span>
+                    <span id="langText">አማርኛ</span>
+                </button>
+            </div>
+            <div class="prize-box" id="prizePool">💰 0</div>
+        </div>
+
+        <!-- Current Number BIG Display -->
+        <div class="current-number-box">
+            <div class="current-number-label" id="currentNumberLabel">CURRENT NUMBER</div>
+            <div class="current-number-big" id="currentNumber">🎲</div>
+            <div class="current-letter" id="currentLetter"></div>
+        </div>
+
+        <!-- Main Game Area - Two Columns Side by Side -->
+        <div class="game-area">
+            <!-- Left Side - BINGO Columns (Called Numbers) -->
+            <div class="called-section">
+                <div class="section-title" id="calledTitle">📢 CALLED</div>
+                
+                <!-- B I N G O Columns -->
+                <div class="bingo-columns">
+                    <!-- B Column (1-15) -->
+                    <div class="column">
+                        <div class="column-header">B</div>
+                        <div class="column-numbers" id="bColumn"></div>
+                    </div>
+                    
+                    <!-- I Column (16-30) -->
+                    <div class="column">
+                        <div class="column-header">I</div>
+                        <div class="column-numbers" id="iColumn"></div>
+                    </div>
+                    
+                    <!-- N Column (31-45) -->
+                    <div class="column">
+                        <div class="column-header">N</div>
+                        <div class="column-numbers" id="nColumn"></div>
+                    </div>
+                    
+                    <!-- G Column (46-60) -->
+                    <div class="column">
+                        <div class="column-header">G</div>
+                        <div class="column-numbers" id="gColumn"></div>
+                    </div>
+                    
+                    <!-- O Column (61-75) -->
+                    <div class="column">
+                        <div class="column-header">O</div>
+                        <div class="column-numbers" id="oColumn"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - Bingo Card (5x5) -->
+            <div class="card-section">
+                <div class="card-title" id="cardTitle">YOUR CARD</div>
+                <div class="bingo-card" id="bingoCard">
+                    <!-- Card will be filled by JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Winning Patterns -->
+        <div class="patterns-box" id="patternsBox">
+            <span class="pattern-badge" id="patternRow">Row</span>
+            <span class="pattern-badge" id="patternColumn">Column</span>
+            <span class="pattern-badge" id="patternDiagonal">Diagonal</span>
+            <span class="pattern-badge" id="patternCorners">Corners</span>
+            <span class="pattern-badge" id="patternX">X Pattern</span>
+        </div>
+
+        <!-- Bingo Button -->
+        <button class="bingo-btn" id="bingoBtn">🔴 BINGO!</button>
+
+        <!-- Status -->
+        <div class="status" id="status">Game in progress... Click numbers to mark</div>
+    </div>
+
+    <script>
+        const tg = Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        const playerId = tg.initDataUnsafe?.user?.id || 'guest_' + Math.random();
+        const socket = io();
+
+        let myCard = null;
+        let calledNumbers = [];
+        let markedNumbers = new Set();
+        let gameActive = true;
+        let currentLanguage = 'am';
+
+        // Translations
+        const translations = {
+            en: {
+                gameTitle: '🎰 LOKI BINGO',
+                langBtn: '🇪🇹 Amharic',
+                currentNumberLabel: 'CURRENT NUMBER',
+                calledTitle: '📢 CALLED',
+                cardTitle: 'YOUR CARD',
+                patternRow: 'Row',
+                patternColumn: 'Column',
+                patternDiagonal: 'Diagonal',
+                patternCorners: 'Corners',
+                patternX: 'X Pattern',
+                bingoBtn: '🔴 BINGO!',
+                status: 'Game in progress... Click numbers to mark',
+                free: 'FREE',
+                called: 'Called'
+            },
+            am: {
+                gameTitle: '🎰 ሎኪ ቢንጎ',
+                langBtn: '🇬🇧 English',
+                currentNumberLabel: 'አሁን ያለው ቁጥር',
+                calledTitle: '📢 የተጠሩ',
+                cardTitle: 'የእርስዎ ካርድ',
+                patternRow: 'ረድፍ',
+                patternColumn: 'አምድ',
+                patternDiagonal: 'ሰያፍ',
+                patternCorners: 'ማዕዘኖች',
+                patternX: 'X ቅርጽ',
+                bingoBtn: '🔴 ቢንጎ!',
+                status: 'ጨዋታ በመካሄድ ላይ... ቁጥሮችን ለማመልከት ይንኩ',
+                free: 'ነፃ',
+                called: 'የተጠራ'
+            }
+        };
+
+        // Toggle language
+        function toggleLanguage() {
+            currentLanguage = currentLanguage === 'en' ? 'am' : 'en';
+            updateLanguage();
+        }
+
+        function updateLanguage() {
+            const t = translations[currentLanguage];
+            document.getElementById('gameTitle').textContent = t.gameTitle;
+            document.getElementById('langText').textContent = t.langBtn;
+            document.getElementById('currentNumberLabel').textContent = t.currentNumberLabel;
+            document.getElementById('calledTitle').textContent = t.calledTitle;
+            document.getElementById('cardTitle').textContent = t.cardTitle;
+            document.getElementById('patternRow').textContent = t.patternRow;
+            document.getElementById('patternColumn').textContent = t.patternColumn;
+            document.getElementById('patternDiagonal').textContent = t.patternDiagonal;
+            document.getElementById('patternCorners').textContent = t.patternCorners;
+            document.getElementById('patternX').textContent = t.patternX;
+            document.getElementById('bingoBtn').textContent = t.bingoBtn;
+            document.getElementById('status').textContent = t.status;
+        }
+
+        // Join game room
+        socket.emit('join', { playerId, playerName: 'Player' });
+
+        // Receive game state
+        socket.on('gameState', (data) => {
+            console.log('Game state received:', data);
+            if (data.phase === 'game') {
+                document.getElementById('prizePool').textContent = `💰 ${data.prizePool}`;
+                calledNumbers = data.calledNumbers || [];
+                updateAllColumns();
+            }
+        });
+
+        // Receive your card - THIS IS CRITICAL!
+        socket.on('yourCard', (card) => {
+            console.log('🎴 CARD RECEIVED:', card);
+            myCard = card;
+            renderCard();
+        });
+
+        // Number called
+        socket.on('numberCalled', (data) => {
+            console.log('Number called:', data.number);
+            // Format number with letter (B-15, I-22, etc)
+            let letter = getNumberLetter(data.number);
+            document.getElementById('currentNumber').textContent = data.number;
+            document.getElementById('currentLetter').textContent = letter;
+            
+            calledNumbers = data.called;
+            updateAllColumns();
+            
+            // Re-render card to show called numbers
+            if (myCard) renderCard();
+        });
+
+        // Game won
+        socket.on('gameWon', (data) => {
+            const t = translations[currentLanguage];
+            document.getElementById('status').textContent = `🏆 Winner: ${data.name} - ${data.prize} coins!`;
+            document.getElementById('bingoBtn').disabled = true;
+            gameActive = false;
+            
+            setTimeout(() => {
+                window.location.href = '/winner';
+            }, 3000);
+        });
+
+        // Phase change
+        socket.on('phaseChange', (phase) => {
+            if (phase === 'winner') {
+                window.location.href = '/winner';
+            }
+        });
+
+        // Get letter for number
+        function getNumberLetter(num) {
+            if (num >= 1 && num <= 15) return 'B';
+            if (num >= 16 && num <= 30) return 'I';
+            if (num >= 31 && num <= 45) return 'N';
+            if (num >= 46 && num <= 60) return 'G';
+            if (num >= 61 && num <= 75) return 'O';
+            return '';
+        }
+
+        // Update all BINGO columns
+        function updateAllColumns() {
+            updateColumn('bColumn', 1, 15);
+            updateColumn('iColumn', 16, 30);
+            updateColumn('nColumn', 31, 45);
+            updateColumn('gColumn', 46, 60);
+            updateColumn('oColumn', 61, 75);
+        }
+
+        // Update individual column
+        function updateColumn(columnId, start, end) {
+            const column = document.getElementById(columnId);
+            let html = '';
+            
+            for (let i = start; i <= end; i++) {
+                let isCalled = calledNumbers.includes(i);
+                let calledClass = isCalled ? 'called' : '';
+                html += `<div class="number-item ${calledClass}">${i}</div>`;
+            }
+            
+            column.innerHTML = html;
+        }
+
+        // Render bingo card (5x5 with clickable cells)
+        function renderCard() {
+            if (!myCard) {
+                console.log('No card to render yet');
+                // Show placeholder
+                let html = '';
+                for (let h of ['B','I','N','G','O']) {
+                    html += `<div class="header-cell">${h}</div>`;
+                }
+                for (let i = 0; i < 25; i++) {
+                    html += `<div class="card-cell">?</div>`;
+                }
+                document.getElementById('bingoCard').innerHTML = html;
+                return;
+            }
+            
+            console.log('Rendering card:', myCard);
+            let html = '';
+            
+            // Headers
+            for (let h of ['B','I','N','G','O']) {
+                html += `<div class="header-cell">${h}</div>`;
+            }
+            
+            // Card cells
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    let val = myCard[r][c];
+                    let letter = ['B','I','N','G','O'][c];
+                    
+                    // Check if number is called
+                    let isCalled = val === 'FREE' || calledNumbers.includes(val);
+                    
+                    // Check if user manually marked this cell
+                    let isMarked = markedNumbers.has(`${r}-${c}`) || (val === 'FREE');
+                    
+                    let cellClass = 'card-cell';
+                    if (val === 'FREE') cellClass += ' free';
+                    if (isMarked) cellClass += ' marked';
+                    
+                    let displayVal = val === 'FREE' ? '⭐' : val;
+                    
+                    html += `<div class="${cellClass}" 
+                                  onclick="markCell(${r}, ${c}, ${typeof val === 'number' ? val : 0})"
+                                  data-row="${r}" 
+                                  data-col="${c}"
+                                  data-number="${val}">
+                        <div>${displayVal}</div>
+                        <div class="cell-letter">${val === 'FREE' ? '' : letter}</div>
+                    </div>`;
+                }
+            }
+            
+            document.getElementById('bingoCard').innerHTML = html;
+        }
+
+        // Mark cell when clicked
+        window.markCell = function(row, col, number) {
+            const t = translations[currentLanguage];
+            
+            if (!gameActive) {
+                tg.showAlert(t.status === 'en' ? 'Game is over!' : 'ጨዋታ አልቋል!');
+                return;
+            }
+            
+            // Can't mark FREE space (it's always marked)
+            if (number === 0 || number === 'FREE') {
+                tg.showAlert(t.free === 'en' ? '⭐ FREE space is always marked!' : '⭐ ነፃ ቦታ ሁልጊዜ ምልክት ይደረግበታል!');
+                return;
+            }
+            
+            // Can only mark if number has been called
+            if (!calledNumbers.includes(number)) {
+                tg.showAlert(`❌ ${t.called} ${number} ${t.called === 'Called' ? "hasn't been called yet!" : "ገና አልተጠራም!"}`);
+                return;
+            }
+            
+            // Toggle mark
+            let key = `${row}-${col}`;
+            if (markedNumbers.has(key)) {
+                markedNumbers.delete(key);
+            } else {
+                markedNumbers.add(key);
+            }
+            
+            renderCard();
+            checkForBingo();
+        };
+
+        // Check for bingo patterns
+        function checkForBingo() {
+            if (!myCard) return false;
+            
+            let patterns = [];
+            
+            // Check rows
+            for (let r = 0; r < 5; r++) {
+                let rowComplete = true;
+                for (let c = 0; c < 5; c++) {
+                    let key = `${r}-${c}`;
+                    if (!markedNumbers.has(key) && myCard[r][c] !== 'FREE') {
+                        rowComplete = false;
+                        break;
+                    }
+                }
+                if (rowComplete) patterns.push('Row');
+            }
+            
+            // Check columns
+            for (let c = 0; c < 5; c++) {
+                let colComplete = true;
+                for (let r = 0; r < 5; r++) {
+                    let key = `${r}-${c}`;
+                    if (!markedNumbers.has(key) && myCard[r][c] !== 'FREE') {
+                        colComplete = false;
+                        break;
+                    }
+                }
+                if (colComplete) patterns.push('Column');
+            }
+            
+            // Check diagonals
+            let diag1Complete = true;
+            let diag2Complete = true;
+            for (let i = 0; i < 5; i++) {
+                let key1 = `${i}-${i}`;
+                let key2 = `${i}-${4-i}`;
+                
+                if (!markedNumbers.has(key1) && myCard[i][i] !== 'FREE') diag1Complete = false;
+                if (!markedNumbers.has(key2) && myCard[i][4-i] !== 'FREE') diag2Complete = false;
+            }
+            if (diag1Complete) patterns.push('Diagonal');
+            if (diag2Complete) patterns.push('Diagonal');
+            
+            // Check four corners
+            let corners = [
+                [0,0], [0,4], [4,0], [4,4]
+            ];
+            let cornersComplete = true;
+            for (let [r,c] of corners) {
+                let key = `${r}-${c}`;
+                if (!markedNumbers.has(key) && myCard[r][c] !== 'FREE') {
+                    cornersComplete = false;
+                    break;
+                }
+            }
+            if (cornersComplete) patterns.push('Corners');
+            
+            // Check X pattern (both diagonals)
+            if (diag1Complete && diag2Complete) patterns.push('X');
+            
+            // Update patterns display
+            updatePatternsDisplay(patterns);
+            
+            return patterns;
+        }
+
+        // Update patterns display
+        function updatePatternsDisplay(patterns) {
+            const t = translations[currentLanguage];
+            const box = document.getElementById('patternsBox');
+            
+            if (patterns.length > 0) {
+                let html = '';
+                patterns.forEach(p => {
+                    if (p === 'Row') html += `<span class="pattern-badge">${t.patternRow}</span>`;
+                    else if (p === 'Column') html += `<span class="pattern-badge">${t.patternColumn}</span>`;
+                    else if (p === 'Diagonal') html += `<span class="pattern-badge">${t.patternDiagonal}</span>`;
+                    else if (p === 'Corners') html += `<span class="pattern-badge">${t.patternCorners}</span>`;
+                    else if (p === 'X') html += `<span class="pattern-badge">${t.patternX}</span>`;
+                });
+                box.innerHTML = html;
+            } else {
+                box.innerHTML = `
+                    <span class="pattern-badge">${t.patternRow}</span>
+                    <span class="pattern-badge">${t.patternColumn}</span>
+                    <span class="pattern-badge">${t.patternDiagonal}</span>
+                    <span class="pattern-badge">${t.patternCorners}</span>
+                    <span class="pattern-badge">${t.patternX}</span>
+                `;
+            }
+        }
+
+        // Bingo button
+        document.getElementById('bingoBtn').onclick = () => {
+            const t = translations[currentLanguage];
+            let patterns = checkForBingo();
+            
+            if (patterns.length > 0) {
+                socket.emit('bingo', { playerId });
+                document.getElementById('bingoBtn').disabled = true;
+                document.getElementById('status').textContent = `🎉 ${t.bingoBtn} ${t.patternRow === 'Row' ? 'claimed! Verifying...' : 'ተጠይቋል! በመፈተሽ ላይ...'}`;
+            } else {
+                tg.showAlert(t.patternRow === 'Row' ? '❌ No Bingo yet! Keep playing.' : '❌ ገና ቢንጎ የለም! መጫወት ቀጥል።');
+            }
+        };
+
+        // Request card data if not received
+        setTimeout(() => {
+            if (!myCard) {
+                console.log('Requesting card again...');
+                socket.emit('getMyCard', { playerId });
+            }
+        }, 2000);
+
+        // Initialize
+        updateLanguage();
+        console.log('Game page loaded');
+    </script>
+</body>
+</html>

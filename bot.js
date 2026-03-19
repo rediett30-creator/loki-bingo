@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 const express = require('express');
 const TelegramBot = require('node-telegram-bot-api');
 const path = require('path');
@@ -8,7 +7,7 @@ const { Server } = require('socket.io');
 const db = require('./database.js');
 
 // ===== YOUR CREDENTIALS =====
-const BOT_TOKEN = '8743849448:AAG7ShQ0CWsrcFVXVnWUL3H8mgQXp2m_oas';
+const BOT_TOKEN = '8743849448:AAEkLo-hSwD5S9aBn782vjchQzmwlxqoG8A';
 const WEBAPP_URL = 'https://loki-bingo-production.up.railway.app/lobby';
 const PORT = process.env.PORT || 3000;
 
@@ -32,8 +31,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // ===== GAME STATE =====
 let gameState = {
-    phase: 'cartela',
+    phase: 'cartela',           // 'cartela', 'game', 'winner'
     cartelaTimer: 30,
+    gameTimer: 0,
     winnerTimer: 5,
     prizePool: 0,
     calledNumbers: [],
@@ -41,7 +41,11 @@ let gameState = {
     players: {},
     cards: [],
     soldCards: new Set(),
-    currentRound: 0
+    currentRound: 0,
+    gameInterval: null,
+    cartelaInterval: null,
+    winnerInterval: null,
+    allNumbersCalled: false
 };
 
 // ===== GENERATE 500 CARDS =====
@@ -69,98 +73,136 @@ for (let i = 0; i < 500; i++) {
 }
 console.log(`✅ Generated ${gameState.cards.length} cards`);
 
-// ===== GAME TIMERS =====
-setInterval(() => {
-    if (gameState.phase === 'cartela') {
+// ===== START CARTELA PHASE =====
+function startCartelaPhase() {
+    console.log('🔄 Starting CARTELA phase');
+    gameState.phase = 'cartela';
+    gameState.cartelaTimer = 30;
+    gameState.prizePool = 0;
+    gameState.calledNumbers = [];
+    gameState.availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
+    gameState.soldCards.clear();
+    gameState.allNumbersCalled = false;
+    
+    // Reset players
+    for (let id in gameState.players) {
+        gameState.players[id].hasCard = false;
+        gameState.players[id].card = null;
+    }
+    
+    io.emit('phaseChange', 'cartela');
+    io.emit('cartelaTimer', gameState.cartelaTimer);
+    
+    // Clear any existing intervals
+    if (gameState.cartelaInterval) clearInterval(gameState.cartelaInterval);
+    if (gameState.gameInterval) clearInterval(gameState.gameInterval);
+    if (gameState.winnerInterval) clearInterval(gameState.winnerInterval);
+    
+    // Start cartela countdown
+    gameState.cartelaInterval = setInterval(() => {
         gameState.cartelaTimer--;
         io.emit('cartelaTimer', gameState.cartelaTimer);
         
         if (gameState.cartelaTimer <= 0) {
-            console.log('🎮 Moving to GAME phase');
-            gameState.phase = 'game';
-            gameState.currentRound++;
-            gameState.calledNumbers = [];
-            gameState.availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
-            io.emit('phaseChange', 'game');
-            io.emit('prizePool', gameState.prizePool);
+            clearInterval(gameState.cartelaInterval);
+            startGamePhase();
         }
-    }
-    
-    if (gameState.phase === 'winner') {
-        gameState.winnerTimer--;
-        io.emit('winnerTimer', gameState.winnerTimer);
-        
-        if (gameState.winnerTimer <= 0) {
-            console.log('🔄 New round starting');
-            gameState.phase = 'cartela';
-            gameState.cartelaTimer = 30;
-            gameState.winnerTimer = 5;
-            gameState.prizePool = 0;
-            gameState.calledNumbers = [];
-            gameState.soldCards.clear();
-            
-            for (let id in gameState.players) {
-                gameState.players[id].hasCard = false;
-                gameState.players[id].card = null;
-            }
-            io.emit('phaseChange', 'cartela');
-            io.emit('cartelaTimer', 30);
-        }
-    }
-}, 1000);
+    }, 1000);
+}
 
-// ===== NUMBER CALLING =====
-setInterval(() => {
-    if (gameState.phase === 'game' && gameState.availableNumbers.length > 0) {
+// ===== START GAME PHASE =====
+function startGamePhase() {
+    console.log('🎮 Starting GAME phase');
+    gameState.phase = 'game';
+    gameState.currentRound++;
+    gameState.calledNumbers = [];
+    gameState.availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
+    gameState.allNumbersCalled = false;
+    
+    io.emit('phaseChange', 'game');
+    io.emit('prizePool', gameState.prizePool);
+    
+    // Start calling numbers every 5 seconds
+    gameState.gameInterval = setInterval(() => {
+        if (gameState.phase !== 'game') {
+            clearInterval(gameState.gameInterval);
+            return;
+        }
+        
+        // Check if all numbers have been called
+        if (gameState.availableNumbers.length === 0) {
+            console.log('📢 All numbers called - No winner this round');
+            gameState.allNumbersCalled = true;
+            clearInterval(gameState.gameInterval);
+            startWinnerPhase('no_winner');
+            return;
+        }
+        
+        // Call next number
         let idx = Math.floor(Math.random() * gameState.availableNumbers.length);
         let number = gameState.availableNumbers[idx];
         gameState.availableNumbers.splice(idx, 1);
         gameState.calledNumbers.push(number);
         
+        console.log(`🔢 Number called: ${number} (${gameState.calledNumbers.length}/75)`);
         io.emit('numberCalled', {
             number: number,
             called: gameState.calledNumbers
         });
         
-        // Check for bingo
-        for (let id in gameState.players) {
-            let player = gameState.players[id];
-            if (player.card && player.hasCard) {
-                if (checkBingo(player.card, gameState.calledNumbers)) {
-                    console.log(`🏆 WINNER: ${player.name}`);
-                    gameState.phase = 'winner';
-                    
-                    // Save to database with YOUR 20% commission!
-                    db.saveGameResult(
-                        gameState.currentRound,
-                        gameState.prizePool,
-                        id,
-                        player.name,
-                        'BINGO!'
-                    );
-                    
-                    io.emit('gameWon', {
-                        name: player.name,
-                        prize: gameState.prizePool - Math.floor(gameState.prizePool * 0.2),
-                        commission: Math.floor(gameState.prizePool * 0.2)
-                    });
-                    break;
-                }
+        // Check for bingo after each number
+        checkForBingo();
+        
+    }, 5000); // 5 seconds between numbers
+}
+
+// ===== CHECK FOR BINGO =====
+function checkForBingo() {
+    for (let id in gameState.players) {
+        let player = gameState.players[id];
+        if (player.card && player.hasCard) {
+            if (checkBingoPatterns(player.card, gameState.calledNumbers)) {
+                console.log(`🏆 WINNER FOUND: ${player.name}`);
+                gameState.phase = 'winner';
+                clearInterval(gameState.gameInterval);
+                
+                let commission = Math.floor(gameState.prizePool * 0.2);
+                let prize = gameState.prizePool - commission;
+                
+                // Save to database
+                db.saveGameResult(
+                    gameState.currentRound,
+                    gameState.prizePool,
+                    id,
+                    player.name,
+                    'BINGO!'
+                );
+                
+                io.emit('gameWon', {
+                    name: player.name,
+                    prize: prize,
+                    commission: commission
+                });
+                
+                startWinnerPhase('winner');
+                return;
             }
         }
     }
-}, 3000);
+}
 
-// ===== CHECK BINGO =====
-function checkBingo(card, calledNumbers) {
+// ===== CHECK BINGO PATTERNS =====
+function checkBingoPatterns(card, calledNumbers) {
     let calledSet = new Set(calledNumbers);
     
+    // Check rows
     for (let r = 0; r < 5; r++) {
         if (card[r].every(cell => cell === 'FREE' || calledSet.has(cell))) {
             return true;
         }
     }
     
+    // Check columns
     for (let c = 0; c < 5; c++) {
         let win = true;
         for (let r = 0; r < 5; r++) {
@@ -172,7 +214,39 @@ function checkBingo(card, calledNumbers) {
         if (win) return true;
     }
     
+    // Check diagonals
+    let d1 = true, d2 = true;
+    for (let i = 0; i < 5; i++) {
+        if (card[i][i] !== 'FREE' && !calledSet.has(card[i][i])) d1 = false;
+        if (card[i][4-i] !== 'FREE' && !calledSet.has(card[i][4-i])) d2 = false;
+    }
+    if (d1 || d2) return true;
+    
     return false;
+}
+
+// ===== START WINNER PHASE =====
+function startWinnerPhase(reason) {
+    console.log(`🏁 Starting WINNER phase (reason: ${reason})`);
+    gameState.phase = 'winner';
+    gameState.winnerTimer = 5;
+    
+    if (reason === 'no_winner') {
+        io.emit('noWinner', { message: 'No winner this round!' });
+    }
+    
+    io.emit('winnerTimer', gameState.winnerTimer);
+    
+    // Start winner countdown
+    gameState.winnerInterval = setInterval(() => {
+        gameState.winnerTimer--;
+        io.emit('winnerTimer', gameState.winnerTimer);
+        
+        if (gameState.winnerTimer <= 0) {
+            clearInterval(gameState.winnerInterval);
+            startCartelaPhase(); // Go back to cartela for new round
+        }
+    }, 1000);
 }
 
 // ===== SOCKET.IO =====
@@ -189,7 +263,7 @@ io.on('connection', (socket) => {
             };
         }
         
-        // Get balance from DATABASE (permanent!)
+        // Get balance from database
         const balance = await db.getPlayerBalance(playerId, playerName);
         
         socket.emit('gameState', {
@@ -219,7 +293,7 @@ io.on('connection', (socket) => {
         let cardNumber = cardIndex + 1;
         if (gameState.soldCards.has(cardNumber)) return;
         
-        // Deduct from DATABASE
+        // Deduct from database
         const result = await db.deductBalance(playerId, 100);
         
         if (result.success) {
@@ -239,16 +313,40 @@ io.on('connection', (socket) => {
         }
     });
     
+    socket.on('bingo', ({ playerId }) => {
+        if (gameState.phase !== 'game') return;
+        
+        let player = gameState.players[playerId];
+        if (!player || !player.card) return;
+        
+        if (checkBingoPatterns(player.card, gameState.calledNumbers)) {
+            gameState.phase = 'winner';
+            clearInterval(gameState.gameInterval);
+            
+            let commission = Math.floor(gameState.prizePool * 0.2);
+            let prize = gameState.prizePool - commission;
+            
+            db.saveGameResult(
+                gameState.currentRound,
+                gameState.prizePool,
+                playerId,
+                player.name,
+                'BINGO!'
+            );
+            
+            io.emit('gameWon', {
+                name: player.name,
+                prize: prize,
+                commission: commission
+            });
+            
+            startWinnerPhase('winner');
+        }
+    });
+    
     socket.on('getBalance', async ({ playerId }) => {
         const balance = await db.getPlayerBalance(playerId, '');
         socket.emit('balance', balance);
-    });
-    
-    socket.on('deductBalance', async ({ playerId, amount }) => {
-        const result = await db.deductBalance(playerId, amount);
-        if (result.success) {
-            socket.emit('balance', result.newBalance);
-        }
     });
 });
 
@@ -259,7 +357,6 @@ bot.onText(/\/start/, async (msg) => {
     const name = msg.from.first_name || 'Player';
     const userId = msg.from.id.toString();
     
-    // Get or create player in database
     await db.getPlayerBalance(userId, name);
     
     bot.sendMessage(msg.chat.id, 
@@ -276,9 +373,8 @@ bot.onText(/\/start/, async (msg) => {
     );
 });
 
-// ===== YOUR EARNINGS COMMAND =====
+// ===== EARNINGS COMMAND =====
 bot.onText(/\/earnings/, async (msg) => {
-    // Only you can use this (your ID: 5514445301)
     if (msg.from.id.toString() !== '5514445301') return;
     
     const total = await db.getTotalCommissions();
@@ -294,7 +390,7 @@ bot.onText(/\/earnings/, async (msg) => {
     bot.sendMessage(msg.chat.id, message, { parse_mode: 'Markdown' });
 });
 
-// ===== BALANCE CHECK COMMAND =====
+// ===== BALANCE COMMAND =====
 bot.onText(/\/balance/, async (msg) => {
     const userId = msg.from.id.toString();
     const balance = await db.getPlayerBalance(userId, msg.from.first_name);
@@ -330,339 +426,17 @@ app.get('/health', (req, res) => {
     res.status(200).send('OK');
 });
 
+// ===== START GAME =====
+startCartelaPhase();
+
 // ===== START SERVER =====
 server.listen(PORT, () => {
     console.log('='.repeat(50));
-    console.log('✅ LOKI BINGO WITH PERMANENT DATABASE');
+    console.log('✅ LOKI BINGO - COMPLETE GAME FLOW');
     console.log('='.repeat(50));
     console.log(`📱 Port: ${PORT}`);
     console.log(`🎴 500 cards ready`);
+    console.log(`🔄 Flow: Cartela(30s) → Game(5s intervals) → Winner(5s) → Cartela`);
     console.log(`💰 Your commissions are now PERMANENT!`);
     console.log('='.repeat(50));
-=======
-const express = require('express');
-const TelegramBot = require('node-telegram-bot-api');
-const path = require('path');
-const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
-
-// ===== YOUR CREDENTIALS - DO NOT CHANGE =====
-const BOT_TOKEN = '8743849448:AAEkLo-hSwD5S9aBn782vjchQzmwlxqoG8A';
-// This will be updated after deployment
-const WEBAPP_URL = process.env.WEBAPP_URL || 'https://YOUR-APP-NAME.up.railway.app/lobby';
-const PORT = process.env.PORT || 3000;
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { 
-    cors: { 
-        origin: ["https://telegram.org", "https://*.telegram.org", "*"],
-        credentials: true 
-    } 
-});
-
-// Simple middleware
-app.use((req, res, next) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    next();
-});
-
-app.use(cors());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// ===== BALANCE DATABASE =====
-let userBalances = {};
-
-// ===== GAME STATE =====
-let gameState = {
-    phase: 'cartela',
-    cartelaTimer: 30,
-    winnerTimer: 5,
-    prizePool: 0,
-    calledNumbers: [],
-    availableNumbers: [],
-    players: {},
-    cards: [],
-    soldCards: new Set()
-};
-
-// ===== GENERATE 500 CARDS =====
-console.log('🎴 Generating 500 bingo cards...');
-for (let i = 0; i < 500; i++) {
-    let card = [];
-    for (let row = 0; row < 5; row++) {
-        let rowData = [];
-        for (let col = 0; col < 5; col++) {
-            if (row === 2 && col === 2) {
-                rowData.push('FREE');
-            } else {
-                let min = [1, 16, 31, 46, 61][col];
-                let max = [15, 30, 45, 60, 75][col];
-                let num;
-                do {
-                    num = Math.floor(Math.random() * (max - min + 1)) + min;
-                } while (card.some(r => r[col] === num));
-                rowData.push(num);
-            }
-        }
-        card.push(rowData);
-    }
-    gameState.cards.push(card);
-}
-console.log(`✅ Generated ${gameState.cards.length} cards`);
-
-// ===== GAME TIMERS =====
-setInterval(() => {
-    if (gameState.phase === 'cartela') {
-        gameState.cartelaTimer--;
-        io.emit('cartelaTimer', gameState.cartelaTimer);
-        
-        if (gameState.cartelaTimer <= 0) {
-            console.log('🎮 Moving to GAME phase');
-            gameState.phase = 'game';
-            gameState.calledNumbers = [];
-            gameState.availableNumbers = Array.from({ length: 75 }, (_, i) => i + 1);
-            io.emit('phaseChange', 'game');
-            io.emit('prizePool', gameState.prizePool);
-        }
-    }
-    
-    if (gameState.phase === 'winner') {
-        gameState.winnerTimer--;
-        io.emit('winnerTimer', gameState.winnerTimer);
-        
-        if (gameState.winnerTimer <= 0) {
-            console.log('🔄 New round starting');
-            gameState.phase = 'cartela';
-            gameState.cartelaTimer = 30;
-            gameState.winnerTimer = 5;
-            gameState.prizePool = 0;
-            gameState.calledNumbers = [];
-            gameState.soldCards.clear();
-            
-            for (let id in gameState.players) {
-                gameState.players[id].hasCard = false;
-                gameState.players[id].card = null;
-            }
-            io.emit('phaseChange', 'cartela');
-            io.emit('cartelaTimer', 30);
-        }
-    }
-}, 1000);
-
-// ===== NUMBER CALLING =====
-setInterval(() => {
-    if (gameState.phase === 'game' && gameState.availableNumbers.length > 0) {
-        let idx = Math.floor(Math.random() * gameState.availableNumbers.length);
-        let number = gameState.availableNumbers[idx];
-        gameState.availableNumbers.splice(idx, 1);
-        gameState.calledNumbers.push(number);
-        
-        io.emit('numberCalled', {
-            number: number,
-            called: gameState.calledNumbers
-        });
-        
-        // Check for bingo
-        for (let id in gameState.players) {
-            let player = gameState.players[id];
-            if (player.card && player.hasCard) {
-                if (checkBingo(player.card, gameState.calledNumbers)) {
-                    console.log(`🏆 WINNER: ${player.name}`);
-                    gameState.phase = 'winner';
-                    let commission = Math.floor(gameState.prizePool * 0.2);
-                    let prize = gameState.prizePool - commission;
-                    
-                    if (userBalances[id]) {
-                        userBalances[id] += prize;
-                    }
-                    
-                    io.emit('gameWon', {
-                        name: player.name,
-                        prize: prize,
-                        commission: commission
-                    });
-                    break;
-                }
-            }
-        }
-    }
-}, 3000);
-
-// ===== CHECK BINGO =====
-function checkBingo(card, calledNumbers) {
-    let calledSet = new Set(calledNumbers);
-    
-    for (let r = 0; r < 5; r++) {
-        if (card[r].every(cell => cell === 'FREE' || calledSet.has(cell))) {
-            return true;
-        }
-    }
-    
-    for (let c = 0; c < 5; c++) {
-        let win = true;
-        for (let r = 0; r < 5; r++) {
-            if (card[r][c] !== 'FREE' && !calledSet.has(card[r][c])) {
-                win = false;
-                break;
-            }
-        }
-        if (win) return true;
-    }
-    
-    return false;
-}
-
-// ===== SOCKET.IO =====
-io.on('connection', (socket) => {
-    console.log('Player connected:', socket.id);
-    
-    socket.on('join', ({ playerId, playerName }) => {
-        if (!gameState.players[playerId]) {
-            gameState.players[playerId] = {
-                name: playerName,
-                card: null,
-                hasCard: false,
-                socketId: socket.id
-            };
-        }
-        
-        if (!userBalances[playerId]) {
-            userBalances[playerId] = 1250;
-        }
-        
-        socket.emit('gameState', {
-            phase: gameState.phase,
-            cartelaTimer: gameState.cartelaTimer,
-            winnerTimer: gameState.winnerTimer,
-            prizePool: gameState.prizePool,
-            calledNumbers: gameState.calledNumbers,
-            playerCount: Object.keys(gameState.players).length,
-            selectedCount: Object.values(gameState.players).filter(p => p.hasCard).length,
-            cards: gameState.cards.slice(0, 20),
-            soldCards: Array.from(gameState.soldCards)
-        });
-        
-        if (gameState.players[playerId].card) {
-            socket.emit('yourCard', gameState.players[playerId].card);
-        }
-    });
-    
-    socket.on('selectCard', ({ playerId, cardIndex }) => {
-        if (gameState.phase !== 'cartela') return;
-        
-        let player = gameState.players[playerId];
-        if (!player || player.hasCard) return;
-        
-        let cardNumber = cardIndex + 1;
-        if (gameState.soldCards.has(cardNumber)) return;
-        
-        gameState.soldCards.add(cardNumber);
-        player.card = JSON.parse(JSON.stringify(gameState.cards[cardIndex]));
-        player.hasCard = true;
-        gameState.prizePool += 100;
-        
-        io.emit('cardSelected', {
-            selectedCount: Object.values(gameState.players).filter(p => p.hasCard).length,
-            prizePool: gameState.prizePool,
-            soldCards: Array.from(gameState.soldCards)
-        });
-        
-        socket.emit('yourCard', player.card);
-    });
-    
-    socket.on('bingo', ({ playerId }) => {
-        if (gameState.phase !== 'game') return;
-        
-        let player = gameState.players[playerId];
-        if (!player || !player.card) return;
-        
-        if (checkBingo(player.card, gameState.calledNumbers)) {
-            gameState.phase = 'winner';
-            let commission = Math.floor(gameState.prizePool * 0.2);
-            let prize = gameState.prizePool - commission;
-            
-            if (userBalances[playerId]) {
-                userBalances[playerId] += prize;
-            }
-            
-            io.emit('gameWon', {
-                name: player.name,
-                prize: prize,
-                commission: commission
-            });
-        }
-    });
-    
-    socket.on('getBalance', ({ playerId }) => {
-        socket.emit('balance', userBalances[playerId] || 1250);
-    });
-    
-    socket.on('deductBalance', ({ playerId, amount }) => {
-        if (userBalances[playerId] && userBalances[playerId] >= amount) {
-            userBalances[playerId] -= amount;
-            socket.emit('balance', userBalances[playerId]);
-            return true;
-        }
-        return false;
-    });
-});
-
-// ===== TELEGRAM BOT =====
-const bot = new TelegramBot(BOT_TOKEN, { polling: true });
-
-bot.onText(/\/start/, (msg) => {
-    const name = msg.from.first_name || 'Player';
-    
-    bot.sendMessage(msg.chat.id, 
-        `🎰 **Welcome to Loki Bingo, ${name}!** 🎰\n\n` +
-        `👇 Click below to enter the lobby!`,
-        {
-            parse_mode: 'Markdown',
-            reply_markup: {
-                inline_keyboard: [[
-                    { text: '🎲 ENTER LOBBY', web_app: { url: WEBAPP_URL } }
-                ]]
-            }
-        }
-    );
-});
-
-bot.on('polling_error', (error) => {
-    console.log('Polling error (ignore):', error.message);
-});
-
-// ===== ROUTES =====
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-app.get('/lobby', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'lobby.html'));
-});
-
-app.get('/game', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'game.html'));
-});
-
-app.get('/winner', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'winner.html'));
-});
-
-// Health check for cloud platforms
-app.get('/health', (req, res) => {
-    res.status(200).send('OK');
-});
-
-// ===== START SERVER =====
-server.listen(PORT, () => {
-    console.log('='.repeat(50));
-    console.log('✅ LOKI BINGO - CLOUD READY');
-    console.log('='.repeat(50));
-    console.log(`📱 Port: ${PORT}`);
-    console.log(`🎴 500 cards ready`);
-    console.log('='.repeat(50));
->>>>>>> d9dd953c6d9f99445b49e798fa76dd76998f01fb
 });

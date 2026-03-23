@@ -1,30 +1,200 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Loki Games - Lobby</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: #1a1a2e; color: white; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; text-align: center; }
-        h1 { color: #e94560; font-size: 48px; margin: 20px 0; }
-        .balance { background: #16213e; padding: 15px; border-radius: 15px; margin: 20px 0; font-size: 24px; color: gold; }
-        .bingo-btn { background: linear-gradient(135deg, #e94560, #ff6b6b); color: white; border: none; padding: 30px; border-radius: 20px; font-size: 36px; font-weight: bold; width: 100%; margin: 20px 0; cursor: pointer; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
-        .game-card { background: #16213e; padding: 20px; border-radius: 15px; margin: 15px 0; cursor: pointer; border: 1px solid #e94560; }
-        .support { background: #0f3460; padding: 15px; border-radius: 15px; margin: 20px 0; cursor: pointer; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c1f 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        /* Header */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 42px;
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle { color: #888; font-size: 14px; }
+        
+        /* Balance Cards */
+        .balance-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .wallet-card {
+            flex: 1;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .wallet-label { font-size: 12px; color: #888; margin-bottom: 5px; }
+        .wallet-value { font-size: 24px; font-weight: bold; color: gold; }
+        
+        /* Stats */
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .stat { text-align: center; flex: 1; }
+        .stat-number { font-size: 28px; font-weight: bold; color: #e94560; }
+        .stat-label { font-size: 10px; color: #888; margin-top: 5px; }
+        
+        /* Menu Buttons */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 30px;
+        }
+        
+        .menu-btn {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 18px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .menu-btn:hover {
+            background: rgba(233,69,96,0.2);
+            border-color: #e94560;
+            transform: translateY(-3px);
+        }
+        
+        .menu-icon { font-size: 28px; margin-bottom: 8px; }
+        .menu-text { font-size: 14px; }
+        
+        /* Play Button */
+        .play-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border: none;
+            width: 100%;
+            padding: 20px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            color: white;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(233,69,96,0.3);
+        }
+        
+        .play-btn:hover { transform: scale(1.02); box-shadow: 0 15px 40px rgba(233,69,96,0.4); }
+        
+        /* Support */
+        .support {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .support:hover { background: rgba(233,69,96,0.2); border-color: #e94560; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎰 LOKI GAMES</h1>
-        <div class="balance" id="balance">⭐ 1,250</div>
-        <button class="bingo-btn" onclick="playBingo()">🎲 PLAY BINGO (14)</button>
-        <div class="game-card" onclick="alert('Coming soon!')">🎴 LUDO - Coming Soon</div>
-        <div class="game-card" onclick="alert('Coming soon!')">🎯 CRAZY - Coming Soon</div>
-        <div class="support" onclick="contactSupport()">📞 Contact Support</div>
+        <div class="header">
+            <h1>🎰 LOKI GAMES</h1>
+            <div class="subtitle">Premium Bingo Experience</div>
+        </div>
+        
+        <div class="balance-container">
+            <div class="wallet-card">
+                <div class="wallet-label">MAIN WALLET</div>
+                <div class="wallet-value" id="mainWallet">0 ETB</div>
+            </div>
+            <div class="wallet-card">
+                <div class="wallet-label">PLAY WALLET</div>
+                <div class="wallet-value" id="playWallet">⭐ 1,250</div>
+            </div>
+        </div>
+        
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-number">21,087</div>
+                <div class="stat-label">MONTHLY USERS</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">ACTIVE GAMES</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number">⭐ 14</div>
+                <div class="stat-label">MIN BET</div>
+            </div>
+        </div>
+        
+        <button class="play-btn" onclick="playBingo()">🎲 PLAY BINGO</button>
+        
+        <div class="menu-grid">
+            <div class="menu-btn" onclick="alert('Balance: 1,250 coins')">
+                <div class="menu-icon">💰</div>
+                <div class="menu-text">BALANCE</div>
+            </div>
+            <div class="menu-btn" onclick="alert('Deposit coming soon!')">
+                <div class="menu-icon">💳</div>
+                <div class="menu-text">DEPOSIT</div>
+            </div>
+            <div class="menu-btn" onclick="alert('Transfer feature coming soon!')">
+                <div class="menu-icon">🔄</div>
+                <div class="menu-text">TRANSFER</div>
+            </div>
+            <div class="menu-btn" onclick="alert('Withdraw feature coming soon!')">
+                <div class="menu-icon">💸</div>
+                <div class="menu-text">WITHDRAW</div>
+            </div>
+            <div class="menu-btn" onclick="alert('Instructions:\n1. Select a cartela\n2. Wait for game to start\n3. Mark numbers when called\n4. Click BINGO when you win!')">
+                <div class="menu-icon">📚</div>
+                <div class="menu-text">INSTRUCTION</div>
+            </div>
+            <div class="menu-btn" onclick="alert('Invite friends to get bonus!')">
+                <div class="menu-icon">🌐</div>
+                <div class="menu-text">INVITE</div>
+            </div>
+        </div>
+        
+        <div class="support" onclick="contactSupport()">
+            📞 CONTACT SUPPORT
+        </div>
     </div>
 
     <script>

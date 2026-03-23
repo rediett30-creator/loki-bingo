@@ -1,43 +1,250 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Loki Bingo - Game</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
-        body { background: #1a1a2e; color: white; padding: 16px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        
+        body {
+            background: linear-gradient(135deg, #0f0c1f 0%, #1a1a2e 100%);
+            min-height: 100vh;
+            padding: 16px;
+            color: #fff;
+        }
+        
         .container { max-width: 500px; margin: 0 auto; }
-        h1 { color: #e94560; text-align: center; font-size: 36px; margin: 20px 0; }
-        .current-number { background: #16213e; padding: 40px; border-radius: 20px; text-align: center; font-size: 72px; color: #e94560; margin: 20px 0; border: 3px solid #e94560; }
-        .called-box { background: #0f3460; padding: 15px; border-radius: 15px; margin: 20px 0; }
-        .called-numbers { display: flex; flex-wrap: wrap; gap: 8px; }
-        .called-number { background: #e94560; padding: 8px 15px; border-radius: 25px; font-size: 16px; }
-        .bingo-card { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; background: #16213e; padding: 20px; border-radius: 20px; margin: 20px 0; }
-        .header-cell { text-align: center; font-size: 24px; color: #e94560; font-weight: bold; }
-        .cell { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #0f3460; border-radius: 10px; font-size: 20px; font-weight: bold; cursor: pointer; }
-        .cell.marked { background: #e94560; }
-        .cell.free { background: #4ecdc4; }
-        .bingo-btn { background: #e94560; color: white; border: none; padding: 20px; border-radius: 15px; font-size: 28px; font-weight: bold; width: 100%; cursor: pointer; margin: 20px 0; }
-        .prize { background: gold; color: #1a1a2e; padding: 10px; border-radius: 10px; text-align: center; margin: 10px 0; }
+        
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .logo h1 { font-size: 22px; background: linear-gradient(135deg, #e94560, #ff6b6b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .prize-badge {
+            background: linear-gradient(135deg, gold, #ffd700);
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+        
+        /* Game Info Grid */
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .info-card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            padding: 10px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .info-value { font-size: 18px; font-weight: bold; color: gold; }
+        .info-label { font-size: 10px; color: #888; }
+        
+        /* Current Number */
+        .current-number {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            border-radius: 30px;
+            padding: 30px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(233,69,96,0.3);
+        }
+        
+        .number-big { font-size: 72px; font-weight: bold; line-height: 1; }
+        .number-letter { font-size: 24px; margin-top: 5px; opacity: 0.9; }
+        
+        /* Called Numbers */
+        .called-section {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .called-title { font-size: 12px; color: #888; margin-bottom: 10px; }
+        .called-numbers { display: flex; flex-wrap: wrap; gap: 8px; max-height: 100px; overflow-y: auto; }
+        .called-number {
+            background: rgba(233,69,96,0.3);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        /* Bingo Card */
+        .card-section {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .card-title { text-align: center; margin-bottom: 15px; color: gold; font-size: 14px; }
+        
+        .bingo-card {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+        
+        .header-cell {
+            text-align: center;
+            font-weight: bold;
+            font-size: 20px;
+            color: #e94560;
+            padding: 8px;
+        }
+        
+        .cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .cell:hover { transform: scale(1.05); background: rgba(233,69,96,0.3); }
+        .cell.marked { background: linear-gradient(135deg, #e94560, #ff6b6b); transform: scale(0.95); box-shadow: 0 5px 15px rgba(233,69,96,0.4); }
+        .cell.free { background: rgba(76, 205, 196, 0.3); color: #4ecdc4; }
+        
+        /* Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 12px;
+            border-radius: 25px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover { background: rgba(233,69,96,0.3); border-color: #e94560; }
+        
+        .bingo-btn {
+            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            color: white;
+            border: none;
+            padding: 18px;
+            border-radius: 30px;
+            font-size: 24px;
+            font-weight: bold;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .bingo-btn:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(233,69,96,0.4); }
+        .bingo-btn:disabled { background: #444; cursor: not-allowed; transform: none; }
+        
+        .status { text-align: center; color: #888; font-size: 14px; }
+        
+        /* Scrollbar */
+        .called-numbers::-webkit-scrollbar { width: 3px; }
+        .called-numbers::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
+        .called-numbers::-webkit-scrollbar-thumb { background: #e94560; border-radius: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🎰 LOKI BINGO</h1>
-        <div class="prize" id="prize">💰 Prize Pool: 0</div>
-        <div class="current-number" id="currentNumber">🎲</div>
-        <div class="called-box">
-            <div style="margin-bottom:10px;">📢 Called Numbers</div>
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <h1>🎰 LOKI BINGO</h1>
+            </div>
+            <div class="prize-badge" id="prize">💰 0</div>
+        </div>
+
+        <!-- Info Grid -->
+        <div class="info-grid">
+            <div class="info-card">
+                <div class="info-value" id="gameId">------</div>
+                <div class="info-label">GAME ID</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value" id="players">0</div>
+                <div class="info-label">PLAYERS</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value" id="bet">100</div>
+                <div class="info-label">BET</div>
+            </div>
+            <div class="info-card">
+                <div class="info-value" id="derash">0</div>
+                <div class="info-label">DERASH</div>
+            </div>
+        </div>
+
+        <!-- Current Number -->
+        <div class="current-number">
+            <div class="number-big" id="currentNumber">🎲</div>
+            <div class="number-letter" id="currentLetter"></div>
+        </div>
+
+        <!-- Called Numbers -->
+        <div class="called-section">
+            <div class="called-title">📢 CALLED NUMBERS</div>
             <div class="called-numbers" id="calledNumbers"></div>
         </div>
-        <div class="bingo-card" id="bingoCard">
-            <div class="header-cell">B</div><div class="header-cell">I</div><div class="header-cell">N</div><div class="header-cell">G</div><div class="header-cell">O</div>
+
+        <!-- Bingo Card -->
+        <div class="card-section">
+            <div class="card-title" id="cartelaNumber">CARTELA #---</div>
+            <div class="bingo-card" id="bingoCard">
+                <div class="header-cell">B</div><div class="header-cell">I</div>
+                <div class="header-cell">N</div><div class="header-cell">G</div>
+                <div class="header-cell">O</div>
+            </div>
         </div>
+
+        <!-- Action Buttons -->
+        <div class="action-buttons">
+            <button class="action-btn" onclick="window.location.href='/'">LEAVE</button>
+            <button class="action-btn" onclick="location.reload()">REFRESH</button>
+            <button class="action-btn" id="autoBtn">AUTOMATIC ✓</button>
+        </div>
+
+        <!-- Bingo Button -->
         <button class="bingo-btn" id="bingoBtn">🔴 BINGO!</button>
-        <div class="status" id="status" style="text-align:center; color:#888;">Game in progress...</div>
+
+        <!-- Status -->
+        <div class="status" id="status">Game in progress...</div>
     </div>
 
     <script>
@@ -51,64 +258,91 @@
         let myCard = null;
         let calledNumbers = [];
         let markedCells = new Set();
+        let cartelaNumber = null;
+        let autoMark = true;
 
         socket.emit('join', { playerId, playerName: 'Player' });
 
         socket.on('gameState', (data) => {
             if (data.phase === 'game') {
-                document.getElementById('prize').textContent = `💰 Prize Pool: ${data.prizePool}`;
+                document.getElementById('prize').textContent = `💰 ${data.prizePool}`;
+                document.getElementById('players').textContent = data.playersCount;
+                document.getElementById('derash').textContent = data.prizePool;
+                document.getElementById('gameId').textContent = data.gameId || '------';
                 calledNumbers = data.calledNumbers || [];
                 updateCalledNumbers();
             }
         });
 
-        socket.on('yourCard', (card) => {
-            myCard = card;
+        socket.on('yourCard', (data) => {
+            myCard = data.card;
+            cartelaNumber = data.cartelaNumber;
+            document.getElementById('cartelaNumber').textContent = `CARTELA #${cartelaNumber}`;
             renderCard();
         });
 
         socket.on('numberCalled', (data) => {
-            document.getElementById('currentNumber').textContent = `🎲 ${data.number}`;
+            let letter = getNumberLetter(data.number);
+            document.getElementById('currentNumber').textContent = data.number;
+            document.getElementById('currentLetter').textContent = letter;
+            
             calledNumbers = data.called;
+            document.getElementById('derash').textContent = data.remaining;
             updateCalledNumbers();
+            if (myCard && autoMark) autoMarkNumber(data.number);
             if (myCard) renderCard();
         });
 
         socket.on('gameWon', (data) => {
-            document.getElementById('status').textContent = `🏆 WINNER: ${data.name} - ${data.prize} coins!`;
+            document.getElementById('status').innerHTML = `🏆 WINNER: ${data.name} - ${data.prize} coins!`;
             document.getElementById('bingoBtn').disabled = true;
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 5000);
+            setTimeout(() => { window.location.href = '/'; }, 5000);
         });
 
         socket.on('phaseChange', (phase) => {
-            if (phase === 'cartela') {
-                window.location.href = '/';
-            }
+            if (phase === 'cartela') window.location.href = '/';
         });
+
+        function getNumberLetter(num) {
+            if (num >= 1 && num <= 15) return 'B';
+            if (num >= 16 && num <= 30) return 'I';
+            if (num >= 31 && num <= 45) return 'N';
+            if (num >= 46 && num <= 60) return 'G';
+            if (num >= 61 && num <= 75) return 'O';
+            return '';
+        }
 
         function updateCalledNumbers() {
             const container = document.getElementById('calledNumbers');
             container.innerHTML = '';
             calledNumbers.slice(-15).forEach(num => {
+                let letter = getNumberLetter(num);
                 const span = document.createElement('span');
                 span.className = 'called-number';
-                span.textContent = num;
+                span.textContent = `${letter}-${num}`;
                 container.appendChild(span);
             });
+        }
+
+        function autoMarkNumber(number) {
+            if (!myCard) return;
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    if (myCard[r][c] === number) {
+                        markedCells.add(`${r}-${c}`);
+                    }
+                }
+            }
         }
 
         function renderCard() {
             if (!myCard) return;
             let html = '';
-            for (let h of ['B','I','N','G','O']) {
-                html += `<div class="header-cell">${h}</div>`;
-            }
+            for (let h of ['B','I','N','G','O']) html += `<div class="header-cell">${h}</div>`;
             for (let r = 0; r < 5; r++) {
                 for (let c = 0; c < 5; c++) {
                     let val = myCard[r][c];
-                    let isMarked = val === 'FREE' || calledNumbers.includes(val) || markedCells.has(`${r}-${c}`);
+                    let isMarked = val === 'FREE' || markedCells.has(`${r}-${c}`);
                     let cellClass = 'cell';
                     if (val === 'FREE') cellClass += ' free';
                     if (isMarked) cellClass += ' marked';
@@ -119,26 +353,23 @@
         }
 
         window.markCell = function(row, col, number) {
-            if (number === 0) {
-                tg.showAlert('FREE space is always marked!');
-                return;
-            }
-            if (!calledNumbers.includes(number)) {
-                tg.showAlert(`Number ${number} hasn't been called yet!`);
-                return;
-            }
+            if (number === 0) { tg.showAlert('FREE space is always marked!'); return; }
+            if (!calledNumbers.includes(number)) { tg.showAlert(`Number ${number} hasn't been called yet!`); return; }
             let key = `${row}-${col}`;
-            if (markedCells.has(key)) {
-                markedCells.delete(key);
-            } else {
-                markedCells.add(key);
-            }
+            if (markedCells.has(key)) markedCells.delete(key);
+            else markedCells.add(key);
             renderCard();
         };
 
         document.getElementById('bingoBtn').onclick = () => {
             socket.emit('bingo', { playerId });
             document.getElementById('bingoBtn').disabled = true;
+        };
+
+        document.getElementById('autoBtn').onclick = () => {
+            autoMark = !autoMark;
+            document.getElementById('autoBtn').textContent = autoMark ? 'AUTOMATIC ✓' : 'MANUAL';
+            document.getElementById('autoBtn').style.background = autoMark ? 'rgba(233,69,96,0.3)' : 'rgba(255,255,255,0.1)';
         };
     </script>
 </body>

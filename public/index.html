@@ -1,105 +1,42 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Loki Bingo - Select Cartela</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
-        
-        body {
-            background: linear-gradient(135deg, #0f0c1f 0%, #1a1a2e 100%);
-            min-height: 100vh;
-            padding: 16px;
-            color: #fff;
-        }
-        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #1a1a2e; color: white; padding: 16px; }
         .container { max-width: 500px; margin: 0 auto; }
+        h1 { color: #e94560; text-align: center; font-size: 36px; margin: 10px 0; }
         
-        /* Header */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            padding: 15px 20px;
-            border-radius: 25px;
-            border: 1px solid rgba(255,255,255,0.1);
+        /* Timer Box */
+        .timer-box { 
+            background: #16213e; 
+            border-radius: 20px; 
+            padding: 20px; 
+            text-align: center; 
+            margin: 15px 0; 
+            border: 2px solid #e94560;
         }
+        .timer-number { font-size: 64px; font-weight: bold; color: #e94560; }
         
-        .logo h1 {
-            font-size: 24px;
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        /* Stats */
+        .stats { 
+            display: flex; 
+            justify-content: space-between; 
+            background: #0f3460; 
+            padding: 15px; 
+            border-radius: 15px; 
+            margin: 15px 0;
         }
+        .stat { text-align: center; flex: 1; }
+        .stat-value { font-size: 24px; font-weight: bold; color: gold; }
+        .stat-label { font-size: 12px; color: #888; }
         
-        .balance-card {
-            background: linear-gradient(135deg, #2a2a3e, #1a1a2e);
-            padding: 10px 15px;
-            border-radius: 20px;
-            text-align: center;
-            border: 1px solid gold;
-        }
-        
-        .balance-label { font-size: 10px; color: #888; }
-        .balance-value { font-size: 18px; font-weight: bold; color: gold; }
-        
-        /* Stats Cards */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            padding: 15px;
-            border-radius: 20px;
-            text-align: center;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .stat-value { font-size: 28px; font-weight: bold; color: #e94560; }
-        .stat-label { font-size: 11px; color: #888; margin-top: 5px; }
-        
-        /* Timer */
-        .timer-box {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
-            border-radius: 30px;
-            padding: 25px;
-            text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(233,69,96,0.3);
-        }
-        
-        .timer-label { font-size: 14px; opacity: 0.9; letter-spacing: 2px; }
-        .timer-number { font-size: 64px; font-weight: bold; line-height: 1; margin: 10px 0; }
-        
-        /* Game Info */
-        .game-info {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .info-item { text-align: center; flex: 1; }
-        .info-value { font-size: 18px; font-weight: bold; color: gold; }
-        .info-label { font-size: 10px; color: #888; }
-        
-        /* Cards Grid */
+        /* Cartela Grid - 5 columns for 500 cards */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
@@ -111,117 +48,97 @@
         }
         
         .cartela-card {
-            background: rgba(255,255,255,0.1);
-            border-radius: 12px;
+            background: #0f3460;
+            border-radius: 10px;
             padding: 12px 5px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(255,255,255,0.2);
-            position: relative;
+            transition: all 0.2s;
+            border: 1px solid #16213e;
         }
         
         .cartela-card:hover {
-            transform: translateY(-3px);
-            background: rgba(233,69,96,0.2);
+            background: #16213e;
             border-color: #e94560;
         }
         
         .cartela-card.selected {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            background: #e94560;
             border-color: gold;
             transform: scale(1.02);
         }
         
-        .cartela-number { font-size: 14px; font-weight: bold; }
-        .cartela-price { font-size: 10px; color: gold; margin-top: 5px; }
+        .cartela-number {
+            font-size: 14px;
+            font-weight: bold;
+        }
         
         /* Button */
         .select-btn {
-            background: linear-gradient(135deg, #e94560, #ff6b6b);
+            background: #e94560;
             color: white;
             border: none;
-            padding: 18px;
-            border-radius: 30px;
+            padding: 16px;
+            border-radius: 15px;
             font-size: 20px;
             font-weight: bold;
             width: 100%;
             cursor: pointer;
             margin: 10px 0;
-            transition: all 0.3s ease;
         }
         
-        .select-btn:hover { transform: scale(1.02); box-shadow: 0 5px 20px rgba(233,69,96,0.4); }
-        .select-btn:disabled { background: #444; cursor: not-allowed; transform: none; }
+        .select-btn:disabled {
+            background: #444;
+            cursor: not-allowed;
+        }
         
-        .status { text-align: center; color: #888; margin: 15px 0; font-size: 14px; }
+        .status {
+            text-align: center;
+            color: #888;
+            margin: 10px 0;
+            font-size: 14px;
+        }
         
-        /* Scrollbar */
-        .cards-grid::-webkit-scrollbar { width: 4px; }
-        .cards-grid::-webkit-scrollbar-track { background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .cards-grid::-webkit-scrollbar-thumb { background: #e94560; border-radius: 10px; }
+        .game-id {
+            text-align: center;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <div class="logo">
-                <h1>🎰 LOKI BINGO</h1>
-            </div>
-            <div class="balance-card">
-                <div class="balance-label">PLAY WALLET</div>
-                <div class="balance-value" id="balance">⭐ 1,250</div>
-            </div>
+        <h1>🎰 LOKI BINGO</h1>
+        
+        <div class="game-id" id="gameId">Loading...</div>
+        
+        <div class="timer-box">
+            <div style="color:#888">TIME TO SELECT CARD</div>
+            <div class="timer-number" id="timer">30</div>
+            <div style="color:#888">seconds</div>
         </div>
-
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card">
+        
+        <div class="stats">
+            <div class="stat">
                 <div class="stat-value" id="players">0</div>
                 <div class="stat-label">PLAYERS</div>
             </div>
-            <div class="stat-card">
+            <div class="stat">
                 <div class="stat-value" id="selected">0</div>
                 <div class="stat-label">SELECTED</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="prizePool">0</div>
+            <div class="stat">
+                <div class="stat-value" id="prize">0</div>
                 <div class="stat-label">PRIZE</div>
             </div>
         </div>
-
-        <!-- Timer -->
-        <div class="timer-box">
-            <div class="timer-label">TIME TO SELECT CARD</div>
-            <div class="timer-number" id="timer">30</div>
-            <div class="timer-label">SECONDS</div>
-        </div>
-
-        <!-- Game Info -->
-        <div class="game-info">
-            <div class="info-item">
-                <div class="info-value" id="gameId">------</div>
-                <div class="info-label">GAME ID</div>
-            </div>
-            <div class="info-item">
-                <div class="info-value" id="stake">100</div>
-                <div class="info-label">BET</div>
-            </div>
-            <div class="info-item">
-                <div class="info-value" id="calledCount">0</div>
-                <div class="info-label">CALLED</div>
-            </div>
-        </div>
-
-        <!-- Cartela Grid -->
+        
         <div class="cards-grid" id="cardsGrid"></div>
-
-        <!-- Select Button -->
+        
         <button class="select-btn" id="selectBtn" disabled>🎲 SELECT CARTELA (100)</button>
-
-        <!-- Status -->
-        <div class="status" id="status">Choose your lucky cartela...</div>
+        
+        <div class="status" id="status">Choose a cartela...</div>
     </div>
 
     <script>
@@ -240,15 +157,14 @@
         socket.emit('join', { playerId, playerName });
 
         socket.on('gameState', (data) => {
-            allCards = data.cards;
-            document.getElementById('players').textContent = data.playersCount;
-            document.getElementById('selected').textContent = data.selectedCount;
-            document.getElementById('prizePool').textContent = data.prizePool;
-            document.getElementById('timer').textContent = data.cartelaTimer;
-            document.getElementById('gameId').textContent = data.gameId || '------';
-            document.getElementById('calledCount').textContent = data.calledCount || 0;
+            console.log('Game state:', data);
+            allCards = data.cards || [];
+            document.getElementById('players').textContent = data.playersCount || 0;
+            document.getElementById('selected').textContent = data.selectedCount || 0;
+            document.getElementById('prize').textContent = data.prizePool || 0;
+            document.getElementById('timer').textContent = data.cartelaTimer || 30;
+            document.getElementById('gameId').textContent = data.gameId || 'Waiting...';
             balance = data.balance || 1250;
-            document.getElementById('balance').textContent = `⭐ ${balance}`;
             renderCards();
         });
 
@@ -258,15 +174,15 @@
 
         socket.on('cardSelected', (data) => {
             document.getElementById('selected').textContent = data.selectedCount;
-            document.getElementById('prizePool').textContent = data.prizePool;
+            document.getElementById('prize').textContent = data.prizePool;
         });
 
         socket.on('balance', (bal) => {
             balance = bal;
-            document.getElementById('balance').textContent = `⭐ ${balance}`;
         });
 
         socket.on('phaseChange', (phase) => {
+            console.log('Phase change:', phase);
             if (phase === 'game') {
                 window.location.href = '/game';
             }
@@ -274,12 +190,12 @@
 
         function renderCards() {
             let html = '';
+            // Show first 50 cards (10 rows of 5)
             for (let i = 0; i < Math.min(50, allCards.length); i++) {
                 let isSelected = (selectedIndex === i);
                 html += `
                     <div class="cartela-card ${isSelected ? 'selected' : ''}" onclick="selectCard(${i})">
                         <div class="cartela-number">#${i+1}</div>
-                        <div class="cartela-price">⭐ 100</div>
                     </div>
                 `;
             }
